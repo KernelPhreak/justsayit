@@ -223,7 +223,7 @@
     }
 
     function startWebSocket() {
-      socket = new WebSocket(`ws://${location.host}/stream`);
+      socket = new WebSocket("wss://api.justsayit.app/stream");
       socket.onmessage = (event) => {
         const messages = JSON.parse(event.data);
         console.log("Received messages:", messages); // Debug log
