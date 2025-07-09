@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ephemeral Cloud</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #111;
+      color: white;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #inputContainer {
+      padding: 20px;
+      text-align: center;
+    }
+
+    #textInput {
+      width: 60%;
+      max-width: 600px;
+      padding: 14px 20px;
+      font-size: 1.2em;
+      border-radius: 999px;
+      /* pill shape */
+      border: none;
+      background: #1e1e1e;
+      color: white;
+      box-shadow: inset 0 0 4px #000, 0 0 8px rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    #textInput:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #00f5d4, 0 0 10px #00f5d4;
+      background: #2a2a2a;
+    }
+
+
+    #filters {
+      margin: 10px 0;
+    }
+
+    #filters button {
+      background: #222;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      margin: 0 5px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    #filters button.selected {
+      font-weight: bold;
+      border: 1px solid white;
+    }
+
+    #cloud {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .message {
+      position: absolute;
+      padding: 10px 14px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      max-width: 300px;
+      opacity: 0;
+      animation: fadein 0.4s ease-out forwards, fadeout 0.5s ease-in 19s forwards;
+      transform-origin: center;
+    }
+
+    @keyframes fadein {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes fadeout {
+      to {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="inputContainer">
+    <input id="textInput" placeholder="Say something... (max 300 chars)" maxlength="300">
+    <!-- <div id="filters">
+      <button data-filter="All" class="selected">All</button>
+      <button data-filter="Happy">Happy</button>
+      <button data-filter="Sad">Sad</button>
+      <button data-filter="Angry">Angry</button>
+      <button data-filter="Neutral">Neutral</button>
+    -->
+  </div>
+  </div>
+  <div id="cloud"></div>
+
+  <script>
+    const textInput = document.getElementById("textInput");
+    const cloud = document.getElementById("cloud");
+    const buttons = document.querySelectorAll("#filters button");
+
+    let currentFilter = "All";
+    let socket;
+    let lastMessages = [];
+    const renderedMessages = new Set();
+
+    buttons.forEach(btn => {
+      btn.onclick = () => {
+        currentFilter = btn.dataset.filter;
+        buttons.forEach(b => {
+          b.classList.remove("selected");
+          b.style.background = "#222";
+        });
+        btn.classList.add("selected");
+        btn.style.background = getColor(currentFilter);
+        renderCloud(lastMessages);
+      };
+    });
+
+    textInput.addEventListener("keypress", async e => {
+      if (e.key === "Enter" && textInput.value.trim() !== "") {
+        const res = await fetch("/message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: textInput.value })
+        });
+        const newMessage = await res.json();
+        lastMessages.push(newMessage);          // ✅ Force local update
+        renderCloud(lastMessages);              // ✅ Show immediately
+        textInput.value = "";
+      }
+    });
+
+
+    function renderCloud(messages) {
+      const width = cloud.offsetWidth;
+      const height = cloud.offsetHeight;
+
+      const filtered = messages.filter(
+        msg => currentFilter === "All" || msg.sentiment === currentFilter
+      );
+
+      filtered.forEach(msg => {
+        if (renderedMessages.has(msg.id)) return;
+
+        const div = document.createElement("div");
+        div.className = "message";
+        div.textContent = msg.text;
+
+        const { bg, text } = getColorPair();
+        div.style.background = bg;
+        div.style.color = text;
+
+        div.style.fontSize = `${Math.random() * 1 + 1}em`;
+        div.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
+
+        const paddingX = 30;
+        const paddingY = 30;
+        const maxX = width - 300 - paddingX;
+        const maxY = height - 100 - paddingY;
+        const x = Math.random() * maxX + paddingX;
+        const y = Math.random() * maxY + paddingY;
+
+        div.style.left = `${x}px`;
+        div.style.top = `${y}px`;
+
+        div.dataset.id = msg.id;
+        cloud.appendChild(div);
+        renderedMessages.add(msg.id);
+
+        setTimeout(() => {
+          div.remove();
+          renderedMessages.delete(msg.id);
+        }, 20000);
+      });
+    }
+
+    function getColorPair() {
+      const colors = [
+        "#f94144", "#f3722c", "#f8961e", "#f9844a",
+        "#90be6d", "#43aa8b", "#577590", "#277da1",
+        "#9b5de5", "#f15bb5", "#00bbf9", "#00f5d4"
+      ];
+      const bg = colors[Math.floor(Math.random() * colors.length)];
+      const text = getContrastColor(bg);
+      return { bg, text };
+    }
+
+    function getContrastColor(hex) {
+      // Convert hex to RGB
+      const r = parseInt(hex.substr(1, 2), 16);
+      const g = parseInt(hex.substr(3, 2), 16);
+      const b = parseInt(hex.substr(5, 2), 16);
+
+      // Calculate luminance
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+      // Return black or white text for contrast
+      return luminance > 0.6 ? "#000000" : "#ffffff";
+    }
+
+    function startWebSocket() {
+      socket = new WebSocket(`ws://${location.host}/stream`);
+      socket.onmessage = (event) => {
+        const messages = JSON.parse(event.data);
+        console.log("Received messages:", messages); // Debug log
+        lastMessages = messages;
+        renderCloud(messages);
+      };
+      socket.onclose = () => {
+        setTimeout(startWebSocket, 1000); // Reconnect
+      };
+    }
+
+    async function fetchInitialMessages() {
+      try {
+        const res = await fetch("/messages");
+        const messages = await res.json();
+        lastMessages = messages;
+        renderCloud(messages);
+      } catch (err) {
+        console.error("Failed to fetch initial messages:", err);
+      }
+    }
+
+    fetchInitialMessages(); // 👈 Call it immediately
+
+
+    startWebSocket();
+  </script>
+</body>
+
+</html>
