@@ -13,7 +13,8 @@ body {
 }
 
 #cloud {
-    background: rgba(44, 43, 43, 0.699); /* DEBUG */
+    background: rgba(20, 20, 20, 0.8);
+    /* previously 44, 43, 43 */
     min-height: 500px;
     width: 100%;
     position: relative;
@@ -91,43 +92,9 @@ body {
     transform-origin: center;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 
-    /* REMOVE THESE */
-    /* left: 0;
-    top: 0;
-    transform: translate(-50%, 0); */
+    transform: scale(1) rotate(var(--rotation, 0deg));
+    transition: transform 0.3s ease;
 }
-
-
-
-
-/* First dot (closer to bubble) */
-.message::after {
-    content: "";
-    position: absolute;
-    bottom: -12px;
-    left: 5px;
-    /* moved left */
-    width: 12px;
-    height: 12px;
-    background: inherit;
-    border-radius: 50%;
-    box-shadow: -16px 16px 0 0 inherit;
-    /* leftward shadow dot */
-}
-
-/* Second smaller dot */
-.message::before {
-    content: "";
-    position: absolute;
-    bottom: -20px;
-    left: 2px;
-    /* moved further left */
-    width: 8px;
-    height: 8px;
-    background: inherit;
-    border-radius: 50%;
-}
-
 
 @keyframes fadein {
     from {
@@ -149,10 +116,11 @@ body {
 }
 
 .hot-word {
-    color: rgb(196, 29, 211);
+    color: #ff00ff;
     font-weight: bold;
-    text-shadow: 0 0 5px rgb(255, 255, 255);
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
 }
+
 
 footer {
     padding: 14px 20px;

@@ -6,15 +6,12 @@ let currentFilter = "All";
 let socket;
 let lastMessages = [];
 const renderedMessages = new Set();
-
-const slotGrid = new Set();
-const GRID_ROWS = 6;
-const GRID_COLS = 4;
-const GRID_LIFETIME = 20000;
+const renderedRects = [];
 
 function resizeCloud() {
-    cloud.style.minHeight = `${window.innerHeight * 0.75}px`; // Force cloud to be visible on mobile
+    cloud.style.minHeight = `${window.innerHeight * 0.75}px`;
 }
+
 window.addEventListener("resize", resizeCloud);
 resizeCloud();
 
@@ -52,8 +49,8 @@ async function updateUserCount() {
         const data = await res.json();
         const count = data.count;
         const text = count === 1 ? "1 person online" : `${count} people online`;
-        document.getElementById("userCount").textContent = `${text}`;
-    } catch (e) {
+        document.getElementById("userCount").textContent = text;
+    } catch {
         document.getElementById("userCount").textContent = "Offline";
     }
 }
@@ -75,8 +72,6 @@ textInput.addEventListener("keypress", async e => {
     }
 });
 
-const renderedRects = [];
-
 function renderMessage(msg) {
     if (renderedMessages.has(msg.id)) return;
 
@@ -89,8 +84,8 @@ function renderMessage(msg) {
         div.style.background = bg;
         div.style.color = text;
         div.style.fontSize = `${Math.random() * 1 + 1}em`;
-        div.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
-        div.style.opacity = 0; // Hide during measurement
+        div.style.setProperty('--rotation', `${(Math.random() - 0.5) * 20}deg`);
+        div.style.opacity = 0;
 
         cloud.appendChild(div);
 
@@ -100,7 +95,6 @@ function renderMessage(msg) {
 
         for (let i = 0; i < maxAttempts; i++) {
             const msgRect = div.getBoundingClientRect();
-            const cloudRect = cloud.getBoundingClientRect();
 
             const maxX = cloud.clientWidth - msgRect.width - padding;
             const maxY = cloud.clientHeight - msgRect.height - padding;
@@ -108,12 +102,10 @@ function renderMessage(msg) {
             const x = Math.random() * maxX + padding;
             const y = Math.random() * maxY + padding;
 
-            // Apply trial position
             div.style.left = `${x}px`;
             div.style.top = `${y}px`;
 
             const trialRect = div.getBoundingClientRect();
-
             const overlaps = renderedRects.some(r => isOverlapping(r, trialRect));
 
             if (!overlaps) {
@@ -124,7 +116,6 @@ function renderMessage(msg) {
         }
 
         if (!placed) {
-            // Couldn’t find a free space, so remove or show anyway
             console.warn("Couldn't place message without overlap");
             div.remove();
             return;
@@ -138,8 +129,9 @@ function renderMessage(msg) {
             div.remove();
             renderedMessages.delete(msg.id);
 
-            // Clean up old rect
-            const idx = renderedRects.findIndex(r => r.left === div.offsetLeft && r.top === div.offsetTop);
+            const idx = renderedRects.findIndex(
+                r => r.left === div.offsetLeft && r.top === div.offsetTop
+            );
             if (idx !== -1) renderedRects.splice(idx, 1);
         }, 20000);
     });
@@ -154,7 +146,6 @@ function isOverlapping(rect1, rect2) {
     );
 }
 
-
 function renderCloud(messages) {
     const filtered = messages.filter(
         msg => currentFilter === "All" || msg.sentiment === currentFilter
@@ -164,10 +155,24 @@ function renderCloud(messages) {
 
 function getColorPair() {
     const colors = [
-        "#f94144", "#f3722c", "#f8961e", "#f9844a",
-        "#90be6d", "#43aa8b", "#577590", "#277da1",
-        "#9b5de5", "#f15bb5", "#00bbf9", "#00f5d4"
+        "#ff595e", // Coral Red
+        "#ffca3a", // Saffron Yellow
+        "#8ac926", // Lime Green
+        "#1982c4", // Vivid Blue
+        "#6a4c93", // Deep Purple
+        "#ff7f51", // Soft Orange
+        "#3a86ff", // Electric Blue
+        "#8338ec", // Vivid Violet
+        "#fb5607", // Bright Orange
+        "#ff006e", // Hot Pink
+        "#00b4d8", // Aqua Blue
+        "#ffd60a", // Bright Yellow
+        "#06d6a0", // Mint Green
+        "#ef476f", // Pink Red
+        "#118ab2", // Sky Blue
+        "#073b4c"  // Slate Navy
     ];
+
     const bg = colors[Math.floor(Math.random() * colors.length)];
     const text = getContrastColor(bg);
     return { bg, text };
@@ -184,16 +189,18 @@ function getContrastColor(hex) {
 function startWebSocket() {
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     socket = new WebSocket(`${protocol}://${location.host}/stream`);
+
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.messages && Array.isArray(data.messages)) {
+        if (Array.isArray(data.messages)) {
             lastMessages = data.messages;
             renderCloud(lastMessages);
         }
         const count = data.users;
         const text = count === 1 ? "1 person online" : `${count} people online`;
-        document.getElementById("userCount").textContent = `${text}`;
+        document.getElementById("userCount").textContent = text;
     };
+
     socket.onclose = () => {
         setTimeout(startWebSocket, 1000);
     };
@@ -201,7 +208,7 @@ function startWebSocket() {
 
 async function fetchInitialMessages() {
     try {
-        const res = await fetch("https://justsayit.wtf/messages");
+        const res = await fetch("/messages");
         const messages = await res.json();
         lastMessages = messages;
         renderCloud(messages);
