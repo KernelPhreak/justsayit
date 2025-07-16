@@ -1,2 +1,38 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# VS Code settings (optional)
+.vscode/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env
+
+# Cache
+*.sqlite3
+*.db
+
+# mypy
+.mypy_cache/
+
+# FastAPI specific (optional if you're serving static files)
+staticfiles/
