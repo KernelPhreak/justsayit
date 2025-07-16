@@ -7,4 +7,3 @@ class MessageIn(BaseModel):
 class MessageOut(BaseModel):
     id: str
     text: str
-    sentiment: Literal["Happy", "Sad", "Angry", "Neutral"]
