@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 
 router = APIRouter()
@@ -12,7 +12,7 @@ async def broadcast_loop():
         await asyncio.sleep(0.5)
 
 async def broadcast_messages():
-    now = datetime.now(datetime.timezone.utc)
+    now = datetime.now(timezone.utc)
     expired = [mid for mid, msg in active_messages.items()
                if now - datetime.fromisoformat(msg["timestamp"]) > timedelta(seconds=20)]
     for mid in expired:
