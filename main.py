@@ -17,7 +17,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://justsayit.wtf", "https://www.justsayit.wtf"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
