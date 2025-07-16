@@ -6,10 +6,6 @@ router = APIRouter()
 connected_clients = []
 from routers.messages import active_messages
 
-@router.on_event("startup")
-async def start_broadcast_loop():
-    asyncio.create_task(broadcast_loop())
-
 async def broadcast_loop():
     while True:
         await broadcast_messages()

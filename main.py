@@ -2,9 +2,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from routers import messages, websocket
+from contextlib import asynccontextmanager
+import asyncio
 
-app = FastAPI()
+from routers import messages, websocket
+from routers.websocket import broadcast_loop
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    asyncio.create_task(broadcast_loop())
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
