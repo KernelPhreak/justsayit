@@ -176,8 +176,9 @@ footer {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
+
 
 
 @media (max-width: 768px) {
