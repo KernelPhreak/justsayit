@@ -12,17 +12,20 @@ async def broadcast_loop():
         await asyncio.sleep(0.5)
 
 async def broadcast_messages():
-    now = datetime.now(timezone.utc)
+    # Remove expired messages first
+    now = datetime.utcnow()
     expired = [mid for mid, msg in active_messages.items()
                if now - datetime.fromisoformat(msg["timestamp"]) > timedelta(seconds=20)]
     for mid in expired:
         del active_messages[mid]
 
+    # Prepare broadcast payload
     payload = {
         "messages": list(active_messages.values()),
         "users": len(connected_clients)
     }
 
+    # Send to all connected clients
     for client in list(connected_clients):
         try:
             await client.send_json(payload)
