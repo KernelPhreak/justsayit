@@ -147,10 +147,8 @@ function isOverlapping(rect1, rect2) {
 }
 
 function renderCloud(messages) {
-    const filtered = messages.filter(
-        msg => currentFilter === "All" || msg.sentiment === currentFilter
-    );
-    filtered.forEach(renderMessage);
+    // Just render all messages, no filtering by sentiment
+    messages.forEach(renderMessage);
 }
 
 function getColorPair() {
