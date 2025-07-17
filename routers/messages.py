@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from routers.websocket import channels
 
 router = APIRouter()
 
@@ -10,5 +11,5 @@ async def get_messages():
 
 @router.get("/users")
 async def get_active_users():
-    from routers.websocket import connected_clients
-    return {"count": len(connected_clients)}
+    total_clients = sum(len(clients) for clients in channels.values())
+    return {"count": total_clients}
