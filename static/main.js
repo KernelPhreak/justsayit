@@ -239,6 +239,16 @@ document.getElementById("joinChannel").onclick = () => {
     if (code) location.href = `?channel=${code}`;
 };
 
+textInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        const msg = textInput.value.trim();
+        if (msg && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ text: msg }));
+            textInput.value = "";
+        }
+    }
+});
+
 
 fetchInitialMessages();
 startWebSocket();
