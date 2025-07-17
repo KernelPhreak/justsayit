@@ -207,4 +207,14 @@ textInput.addEventListener("keydown", (e) => {
     }
 });
 
+document.addEventListener("click", (e) => {
+    if (
+        !fabBtn.contains(e.target) &&
+        !fabOptions.contains(e.target)
+    ) {
+        fabOptions.classList.add("hidden");
+    }
+});
+
+
 startWebSocket();
