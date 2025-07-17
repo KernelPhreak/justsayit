@@ -1,49 +1,65 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from typing import Dict, Set
 import asyncio
+import uuid
 
 router = APIRouter()
-connected_clients = []
-from routers.messages import active_messages
+channels: Dict[str, Set[WebSocket]] = {}
+channel_messages: Dict[str, Dict[str, dict]] = {}
+
+def cleanup_expired_messages():
+    now = datetime.utcnow()
+    for channel_id, msgs in list(channel_messages.items()):
+        expired = [mid for mid, msg in msgs.items()
+                   if now - datetime.fromisoformat(msg["timestamp"]) > timedelta(seconds=20)]
+        for mid in expired:
+            del msgs[mid]
 
 async def broadcast_loop():
     while True:
-        await broadcast_messages()
+        cleanup_expired_messages()
+        for channel_id, clients in list(channels.items()):
+            payload = {
+                "messages": list(channel_messages.get(channel_id, {}).values()),
+                "users": len(clients)
+            }
+            for client in list(clients):
+                try:
+                    await client.send_json(payload)
+                except WebSocketDisconnect:
+                    clients.remove(client)
         await asyncio.sleep(0.5)
 
-async def broadcast_messages():
-    # Remove expired messages first
-    now = datetime.utcnow()
-    expired = [mid for mid, msg in active_messages.items()
-               if now - datetime.fromisoformat(msg["timestamp"]) > timedelta(seconds=20)]
-    for mid in expired:
-        del active_messages[mid]
-
-    # Prepare broadcast payload
-    payload = {
-        "messages": list(active_messages.values()),
-        "users": len(connected_clients)
-    }
-
-    # Send to all connected clients
-    for client in list(connected_clients):
-        try:
-            await client.send_json(payload)
-        except WebSocketDisconnect:
-            connected_clients.remove(client)
-
-@router.websocket("/stream")
-async def stream_messages(websocket: WebSocket):
+@router.websocket("/stream/{channel_id}")
+async def stream_messages(websocket: WebSocket, channel_id: str):
+    origin = websocket.headers.get("origin")
+    if origin not in ("https://www.justsayit.wtf", "https://justsayit.wtf"):
+        await websocket.close(code=1008)
+        return
+    
     await websocket.accept()
-    connected_clients.append(websocket)
+    if channel_id not in channels:
+        channels[channel_id] = set()
+        channel_messages[channel_id] = {}
+    channels[channel_id].add(websocket)
 
     await websocket.send_json({
-        "messages": list(active_messages.values()),
-        "users": len(connected_clients)
+        "messages": list(channel_messages[channel_id].values()),
+        "users": len(channels[channel_id])
     })
 
     try:
         while True:
-            await asyncio.sleep(30)
+            data = await websocket.receive_json()
+            text = data.get("text", "").strip()
+            if text:
+                mid = str(uuid.uuid4())
+                msg = {
+                    "id": mid,
+                    "text": text,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+                channel_messages[channel_id][mid] = msg
     except WebSocketDisconnect:
-        connected_clients.remove(websocket)
+        channels[channel_id].remove(websocket)
