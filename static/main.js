@@ -1,6 +1,8 @@
 const textInput = document.getElementById("textInput");
 const cloud = document.getElementById("cloud");
 const buttons = document.querySelectorAll("#filters button");
+const fabBtn = document.getElementById("fabBtn");
+const fabOptions = document.getElementById("fabOptions");
 
 let currentFilter = "All";
 let socket;
@@ -11,7 +13,6 @@ const renderedRects = [];
 function randomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
-
 
 function resizeCloud() {
     cloud.style.minHeight = `${window.innerHeight * 0.75}px`;
@@ -62,20 +63,6 @@ async function updateUserCount() {
 
 setInterval(updateUserCount, 5000);
 updateUserCount();
-
-textInput.addEventListener("keypress", async e => {
-    if (e.key === "Enter" && textInput.value.trim() !== "") {
-        const res = await fetch("/message", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: textInput.value })
-        });
-        const newMessage = await res.json();
-        lastMessages.push(newMessage);
-        renderCloud(lastMessages);
-        textInput.value = "";
-    }
-});
 
 function renderMessage(msg) {
     if (renderedMessages.has(msg.id)) return;
@@ -152,30 +139,15 @@ function isOverlapping(rect1, rect2) {
 }
 
 function renderCloud(messages) {
-    // Just render all messages, no filtering by sentiment
     messages.forEach(renderMessage);
 }
 
 function getColorPair() {
     const colors = [
-        "#ff595e", // Coral Red
-        "#ffca3a", // Saffron Yellow
-        "#8ac926", // Lime Green
-        "#1982c4", // Vivid Blue
-        "#6a4c93", // Deep Purple
-        "#ff7f51", // Soft Orange
-        "#3a86ff", // Electric Blue
-        "#8338ec", // Vivid Violet
-        "#fb5607", // Bright Orange
-        "#ff006e", // Hot Pink
-        "#00b4d8", // Aqua Blue
-        "#ffd60a", // Bright Yellow
-        "#06d6a0", // Mint Green
-        "#ef476f", // Pink Red
-        "#118ab2", // Sky Blue
-        "#073b4c"  // Slate Navy
+        "#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93",
+        "#ff7f51", "#3a86ff", "#8338ec", "#fb5607", "#ff006e",
+        "#00b4d8", "#ffd60a", "#06d6a0", "#ef476f", "#118ab2", "#073b4c"
     ];
-
     const bg = colors[Math.floor(Math.random() * colors.length)];
     const text = getContrastColor(bg);
     return { bg, text };
@@ -194,7 +166,6 @@ function startWebSocket() {
     const channel = urlParams.get("channel") || "public";
     socket = new WebSocket(`wss://${location.host}/stream/${channel}`);
 
-
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (Array.isArray(data.messages)) {
@@ -211,19 +182,6 @@ function startWebSocket() {
     };
 }
 
-async function fetchInitialMessages() {
-    try {
-        const res = await fetch("/messages");
-        const messages = await res.json();
-        lastMessages = messages;
-        renderCloud(messages);
-    } catch (err) {
-        console.error("Failed to fetch initial messages:", err);
-    }
-}
-
-const fabBtn = document.getElementById("fabBtn");
-const fabOptions = document.getElementById("fabOptions");
 fabBtn.onclick = () => fabOptions.classList.toggle("hidden");
 
 document.getElementById("createChannel").onclick = () => {
@@ -249,6 +207,4 @@ textInput.addEventListener("keydown", (e) => {
     }
 });
 
-
-fetchInitialMessages();
 startWebSocket();
