@@ -8,6 +8,11 @@ let lastMessages = [];
 const renderedMessages = new Set();
 const renderedRects = [];
 
+function randomCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+
 function resizeCloud() {
     cloud.style.minHeight = `${window.innerHeight * 0.75}px`;
 }
@@ -185,8 +190,10 @@ function getContrastColor(hex) {
 }
 
 function startWebSocket() {
-    const protocol = location.protocol === "https:" ? "wss" : "ws";
-    socket = new WebSocket(`${protocol}://${location.host}/stream`);
+    const urlParams = new URLSearchParams(window.location.search);
+    const channel = urlParams.get("channel") || "public";
+    socket = new WebSocket(`wss://${location.host}/stream/${channel}`);
+
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -214,6 +221,24 @@ async function fetchInitialMessages() {
         console.error("Failed to fetch initial messages:", err);
     }
 }
+
+const fabBtn = document.getElementById("fabBtn");
+const fabOptions = document.getElementById("fabOptions");
+fabBtn.onclick = () => fabOptions.classList.toggle("hidden");
+
+document.getElementById("createChannel").onclick = () => {
+    const code = randomCode();
+    const url = `${location.origin}?channel=${code}`;
+    navigator.clipboard.writeText(url);
+    alert(`Channel Created! Code: ${code}\nURL copied to clipboard.`);
+    location.href = `?channel=${code}`;
+};
+
+document.getElementById("joinChannel").onclick = () => {
+    const code = prompt("Enter channel code:").trim().toUpperCase();
+    if (code) location.href = `?channel=${code}`;
+};
+
 
 fetchInitialMessages();
 startWebSocket();

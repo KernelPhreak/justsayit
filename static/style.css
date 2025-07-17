@@ -140,6 +140,46 @@ footer {
     margin-bottom: env(safe-area-inset-bottom, 10px);
 }
 
+#fabMenu {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10;
+}
+
+#fabBtn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #00f5d4;
+    color: black;
+    font-size: 2em;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+#fabOptions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+#fabOptions button {
+    padding: 10px;
+    border: none;
+    background: #222;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none;
+}
+
+
 @media (max-width: 768px) {
     #textInput {
         width: 90%;
